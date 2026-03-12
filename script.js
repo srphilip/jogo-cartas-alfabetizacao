@@ -5,11 +5,13 @@ const gameData = [
     { palavra: "Sapo", letra: "S", imagem: "images/sapo.png", som: "sounds/sapo.mp3" }
 ];
 
+// O Alfabeto completo
+const alfabetoCompleto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
 let score = 0;
-let totalItems = 3;
+let totalItems = 3; // Quantidade de imagens por rodada
 let currentItems = [];
 
-// Variáveis para controlar o movimento do dedo/mouse
 let isDragging = false;
 let dragElement = null;
 
@@ -30,10 +32,13 @@ function initGame() {
     dropZoneContainer.innerHTML = '';
     lettersContainer.innerHTML = '';
 
+    // Sorteia as palavras da rodada
     currentItems = shuffleArray([...gameData]).slice(0, totalItems);
-    let letras = currentItems.map(item => item.letra);
-    letras = shuffleArray(letras);
+    
+    // Embaralha o alfabeto inteiro para exibir na tela
+    let letrasEmbaralhadas = shuffleArray([...alfabetoCompleto]);
 
+    // Monta as imagens e os quadros vazios
     currentItems.forEach(item => {
         const itemBox = document.createElement('div');
         itemBox.classList.add('item-box');
@@ -45,34 +50,29 @@ function initGame() {
         dropZoneContainer.appendChild(itemBox);
     });
 
-    letras.forEach(letra => {
+    // Monta AS 26 CARTAS DO ALFABETO
+    letrasEmbaralhadas.forEach(letra => {
         const letterCard = document.createElement('div');
         letterCard.classList.add('letra-card');
         letterCard.innerText = letra;
         
-        // EVENTO PRINCIPAL: Quando a criança encosta o dedo na carta
         letterCard.addEventListener('pointerdown', iniciarArrasto);
         
         lettersContainer.appendChild(letterCard);
     });
 }
 
-// === LÓGICA DE ARRASTO PARA TELAS DE TOQUE (TABLETS) === //
-
 function iniciarArrasto(e) {
-    // Só permite arrastar com o botão esquerdo do mouse ou com o dedo
     if (e.button !== 0 && e.pointerType === 'mouse') return; 
 
     dragElement = e.target;
     isDragging = true;
 
-    // Guarda a posição inicial do dedo na tela
     dragElement.dataset.startX = e.clientX;
     dragElement.dataset.startY = e.clientY;
 
     dragElement.classList.add('dragging');
 
-    // Avisa o navegador para ouvir os movimentos do dedo pela tela inteira
     document.addEventListener('pointermove', arrastar, { passive: false });
     document.addEventListener('pointerup', soltar);
     document.addEventListener('pointercancel', soltar);
@@ -81,30 +81,25 @@ function iniciarArrasto(e) {
 function arrastar(e) {
     if (!isDragging || !dragElement) return;
     
-    e.preventDefault(); // Impede o tablet de tentar rolar a página para baixo
+    e.preventDefault();
 
-    // Calcula o quanto o dedo se moveu desde o clique inicial
     const dx = e.clientX - parseFloat(dragElement.dataset.startX);
     const dy = e.clientY - parseFloat(dragElement.dataset.startY);
 
-    // Move a carta visualmente acompanhando o dedo
     dragElement.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
 }
 
 function soltar(e) {
     if (!isDragging || !dragElement) return;
 
-    // Remove os ouvintes de movimento
     document.removeEventListener('pointermove', arrastar);
     document.removeEventListener('pointerup', soltar);
     document.removeEventListener('pointercancel', soltar);
 
-    // TRUQUE MÁGICO: Esconde a carta por 1 milissegundo para o navegador conseguir ler qual elemento está *debaixo* do dedo da criança
     dragElement.style.display = 'none';
     const elementoAbaixoDoDedo = document.elementFromPoint(e.clientX, e.clientY);
-    dragElement.style.display = 'flex'; // Traz a carta de volta
+    dragElement.style.display = 'flex';
 
-    // Verifica se o que estava embaixo do dedo era uma zona de soltar válida
     const zonaAlvo = elementoAbaixoDoDedo ? elementoAbaixoDoDedo.closest('.drop-zone') : null;
 
     if (zonaAlvo && !zonaAlvo.classList.contains('dropped')) {
@@ -112,7 +107,7 @@ function soltar(e) {
         const letraArrastada = dragElement.innerText;
 
         if (letraCorreta === letraArrastada) {
-            // ACERTOU!
+            // Acerto
             tocarSom(somAcerto);
             
             const itemObj = currentItems.find(i => i.letra === letraCorreta);
@@ -123,13 +118,13 @@ function soltar(e) {
 
             zonaAlvo.innerText = letraArrastada;
             zonaAlvo.classList.add('dropped', 'acerto-animacao');
-            zonaAlvo.style.fontSize = "3rem";
+            zonaAlvo.style.fontSize = "4rem"; // Letra maior quando acertar
             zonaAlvo.style.fontWeight = "bold";
             zonaAlvo.style.color = "#2ecc71";
             zonaAlvo.style.backgroundColor = "#e8f8f5";
             zonaAlvo.style.borderColor = "#2ecc71";
             
-            dragElement.remove(); // Destrói a carta arrastada
+            dragElement.remove(); 
             
             score++;
             scoreDisplay.innerText = score;
@@ -139,17 +134,17 @@ function soltar(e) {
             verificarFimDeJogo();
 
         } else {
-            // ERROU DE QUADRADO
+            // Erro
             tocarSom(somErro);
             zonaAlvo.classList.add('erro-animacao');
             feedbackMessage.innerText = "Ops! Tente novamente!";
             feedbackMessage.style.color = "#e74c3c";
             
             setTimeout(() => zonaAlvo.classList.remove('erro-animacao'), 400);
-            resetarPosicao(dragElement); // Devolve a carta para a base
+            resetarPosicao(dragElement); 
         }
     } else {
-        // SOLTOU NO LUGAR ERRADO (Fora dos quadrados)
+        // Soltou fora
         resetarPosicao(dragElement);
     }
 
@@ -162,14 +157,13 @@ function soltar(e) {
 }
 
 function resetarPosicao(elemento) {
-    // Tira os estilos de movimento e a carta volta para o lugar original suavemente
     elemento.style.transform = '';
 }
 
 function tocarSom(audioElement) {
     if (audioElement && audioElement.readyState >= 2) {
         audioElement.currentTime = 0;
-        audioElement.play().catch(() => console.log("Áudio bloqueado pelo navegador."));
+        audioElement.play().catch(() => console.log("Áudio bloqueado."));
     }
 }
 
