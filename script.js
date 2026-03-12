@@ -9,8 +9,9 @@ let score = 0;
 let totalItems = 3;
 let currentItems = [];
 
-let letraSelecionada = null;
-let cardSelecionadoElement = null;
+// Variáveis para controlar o movimento do dedo/mouse
+let isDragging = false;
+let dragElement = null;
 
 const dropZoneContainer = document.getElementById('drop-zone-container');
 const lettersContainer = document.getElementById('letters-container');
@@ -22,11 +23,8 @@ const somErro = document.getElementById('som-erro');
 
 function initGame() {
     score = 0;
-    letraSelecionada = null;
-    cardSelecionadoElement = null;
-    
     scoreDisplay.innerText = score;
-    feedbackMessage.innerText = "Toque em uma letra e depois no quadro vazio!";
+    feedbackMessage.innerText = "Arraste a letra até o quadro vazio!";
     feedbackMessage.style.color = "#ff9f43";
     restartBtn.classList.add('hidden');
     dropZoneContainer.innerHTML = '';
@@ -52,93 +50,126 @@ function initGame() {
         letterCard.classList.add('letra-card');
         letterCard.innerText = letra;
         
-        // CORREÇÃO: Usando pointerdown para resposta imediata no Touch
-        letterCard.addEventListener('pointerdown', (e) => {
-            e.preventDefault(); 
-            selecionarLetra(letra, letterCard);
-        });
+        // EVENTO PRINCIPAL: Quando a criança encosta o dedo na carta
+        letterCard.addEventListener('pointerdown', iniciarArrasto);
+        
         lettersContainer.appendChild(letterCard);
     });
-
-    const dropZones = document.querySelectorAll('.drop-zone');
-    dropZones.forEach(zone => {
-        // CORREÇÃO: Usando pointerdown para resposta imediata no Touch
-        zone.addEventListener('pointerdown', (e) => {
-            e.preventDefault();
-            tentarPosicionar(zone);
-        });
-    });
 }
 
-function selecionarLetra(letra, elemento) {
-    const todasCartas = document.querySelectorAll('.letra-card');
-    todasCartas.forEach(carta => carta.classList.remove('selecionada'));
+// === LÓGICA DE ARRASTO PARA TELAS DE TOQUE (TABLETS) === //
 
-    elemento.classList.add('selecionada');
-    letraSelecionada = letra;
-    cardSelecionadoElement = elemento;
+function iniciarArrasto(e) {
+    // Só permite arrastar com o botão esquerdo do mouse ou com o dedo
+    if (e.button !== 0 && e.pointerType === 'mouse') return; 
+
+    dragElement = e.target;
+    isDragging = true;
+
+    // Guarda a posição inicial do dedo na tela
+    dragElement.dataset.startX = e.clientX;
+    dragElement.dataset.startY = e.clientY;
+
+    dragElement.classList.add('dragging');
+
+    // Avisa o navegador para ouvir os movimentos do dedo pela tela inteira
+    document.addEventListener('pointermove', arrastar, { passive: false });
+    document.addEventListener('pointerup', soltar);
+    document.addEventListener('pointercancel', soltar);
 }
 
-function tentarPosicionar(zonaAlvo) {
-    if (!letraSelecionada || zonaAlvo.classList.contains('dropped')) return;
+function arrastar(e) {
+    if (!isDragging || !dragElement) return;
+    
+    e.preventDefault(); // Impede o tablet de tentar rolar a página para baixo
 
-    const letraCorreta = zonaAlvo.getAttribute('data-letra');
+    // Calcula o quanto o dedo se moveu desde o clique inicial
+    const dx = e.clientX - parseFloat(dragElement.dataset.startX);
+    const dy = e.clientY - parseFloat(dragElement.dataset.startY);
 
-    if (letraSelecionada === letraCorreta) {
-        tocarSom(somAcerto);
-        
-        const itemObj = currentItems.find(i => i.letra === letraCorreta);
-        if(itemObj && itemObj.som) {
-             const somPalavra = new Audio(itemObj.som);
-             setTimeout(() => tocarSom(somPalavra), 600);
+    // Move a carta visualmente acompanhando o dedo
+    dragElement.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+}
+
+function soltar(e) {
+    if (!isDragging || !dragElement) return;
+
+    // Remove os ouvintes de movimento
+    document.removeEventListener('pointermove', arrastar);
+    document.removeEventListener('pointerup', soltar);
+    document.removeEventListener('pointercancel', soltar);
+
+    // TRUQUE MÁGICO: Esconde a carta por 1 milissegundo para o navegador conseguir ler qual elemento está *debaixo* do dedo da criança
+    dragElement.style.display = 'none';
+    const elementoAbaixoDoDedo = document.elementFromPoint(e.clientX, e.clientY);
+    dragElement.style.display = 'flex'; // Traz a carta de volta
+
+    // Verifica se o que estava embaixo do dedo era uma zona de soltar válida
+    const zonaAlvo = elementoAbaixoDoDedo ? elementoAbaixoDoDedo.closest('.drop-zone') : null;
+
+    if (zonaAlvo && !zonaAlvo.classList.contains('dropped')) {
+        const letraCorreta = zonaAlvo.getAttribute('data-letra');
+        const letraArrastada = dragElement.innerText;
+
+        if (letraCorreta === letraArrastada) {
+            // ACERTOU!
+            tocarSom(somAcerto);
+            
+            const itemObj = currentItems.find(i => i.letra === letraCorreta);
+            if(itemObj && itemObj.som) {
+                 const somPalavra = new Audio(itemObj.som);
+                 setTimeout(() => tocarSom(somPalavra), 600);
+            }
+
+            zonaAlvo.innerText = letraArrastada;
+            zonaAlvo.classList.add('dropped', 'acerto-animacao');
+            zonaAlvo.style.fontSize = "3rem";
+            zonaAlvo.style.fontWeight = "bold";
+            zonaAlvo.style.color = "#2ecc71";
+            zonaAlvo.style.backgroundColor = "#e8f8f5";
+            zonaAlvo.style.borderColor = "#2ecc71";
+            
+            dragElement.remove(); // Destrói a carta arrastada
+            
+            score++;
+            scoreDisplay.innerText = score;
+            feedbackMessage.innerText = "Muito bem! Você acertou!";
+            feedbackMessage.style.color = "#2ecc71";
+
+            verificarFimDeJogo();
+
+        } else {
+            // ERROU DE QUADRADO
+            tocarSom(somErro);
+            zonaAlvo.classList.add('erro-animacao');
+            feedbackMessage.innerText = "Ops! Tente novamente!";
+            feedbackMessage.style.color = "#e74c3c";
+            
+            setTimeout(() => zonaAlvo.classList.remove('erro-animacao'), 400);
+            resetarPosicao(dragElement); // Devolve a carta para a base
         }
-
-        zonaAlvo.innerText = letraSelecionada;
-        zonaAlvo.classList.add('dropped', 'acerto-animacao');
-        zonaAlvo.style.fontSize = "3rem";
-        zonaAlvo.style.fontWeight = "bold";
-        zonaAlvo.style.color = "#2ecc71";
-        zonaAlvo.style.backgroundColor = "#e8f8f5";
-        zonaAlvo.style.borderColor = "#2ecc71";
-        
-        if (cardSelecionadoElement) {
-            cardSelecionadoElement.remove(); 
-        }
-        
-        letraSelecionada = null;
-        cardSelecionadoElement = null;
-        
-        score++;
-        scoreDisplay.innerText = score;
-        feedbackMessage.innerText = "Muito bem! Você acertou!";
-        feedbackMessage.style.color = "#2ecc71";
-
-        verificarFimDeJogo();
-
     } else {
-        tocarSom(somErro);
-        
-        zonaAlvo.classList.add('erro-animacao');
-        feedbackMessage.innerText = "Ops! Tente novamente!";
-        feedbackMessage.style.color = "#e74c3c";
-        
-        setTimeout(() => {
-            zonaAlvo.classList.remove('erro-animacao');
-        }, 400);
-
-        if (cardSelecionadoElement) {
-            cardSelecionadoElement.classList.remove('selecionada');
-        }
-        letraSelecionada = null;
-        cardSelecionadoElement = null;
+        // SOLTOU NO LUGAR ERRADO (Fora dos quadrados)
+        resetarPosicao(dragElement);
     }
+
+    if (dragElement) {
+        dragElement.classList.remove('dragging');
+    }
+    
+    isDragging = false;
+    dragElement = null;
+}
+
+function resetarPosicao(elemento) {
+    // Tira os estilos de movimento e a carta volta para o lugar original suavemente
+    elemento.style.transform = '';
 }
 
 function tocarSom(audioElement) {
     if (audioElement && audioElement.readyState >= 2) {
         audioElement.currentTime = 0;
-        // Interações de pointerdown geralmente desbloqueiam o áudio no mobile
-        audioElement.play().catch(() => console.log("Áudio bloqueado pelo navegador mobile."));
+        audioElement.play().catch(() => console.log("Áudio bloqueado pelo navegador."));
     }
 }
 
@@ -159,7 +190,5 @@ function shuffleArray(array) {
     return array;
 }
 
-// O botão reiniciar pode continuar com 'click' pois é um botão padrão do HTML
 restartBtn.addEventListener('click', initGame);
-
 window.onload = initGame;
