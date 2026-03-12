@@ -9,7 +9,6 @@ let score = 0;
 let totalItems = 3;
 let currentItems = [];
 
-// Variáveis para controlar a seleção por toque
 let letraSelecionada = null;
 let cardSelecionadoElement = null;
 
@@ -41,7 +40,6 @@ function initGame() {
         const itemBox = document.createElement('div');
         itemBox.classList.add('item-box');
         
-        // Se a imagem não for encontrada, mostra um quadrado com o nome
         itemBox.innerHTML = `
             <img src="${item.imagem}" alt="${item.palavra}" class="item-image" onerror="this.outerHTML='<div class=\\'fallback-text\\'>${item.palavra}</div>'">
             <div class="drop-zone" data-letra="${item.letra}"></div>
@@ -54,15 +52,21 @@ function initGame() {
         letterCard.classList.add('letra-card');
         letterCard.innerText = letra;
         
-        // Evento de toque na carta
-        letterCard.addEventListener('click', () => selecionarLetra(letra, letterCard));
+        // CORREÇÃO: Usando pointerdown para resposta imediata no Touch
+        letterCard.addEventListener('pointerdown', (e) => {
+            e.preventDefault(); 
+            selecionarLetra(letra, letterCard);
+        });
         lettersContainer.appendChild(letterCard);
     });
 
     const dropZones = document.querySelectorAll('.drop-zone');
     dropZones.forEach(zone => {
-        // Evento de toque no espaço vazio
-        zone.addEventListener('click', () => tentarPosicionar(zone));
+        // CORREÇÃO: Usando pointerdown para resposta imediata no Touch
+        zone.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            tentarPosicionar(zone);
+        });
     });
 }
 
@@ -76,13 +80,11 @@ function selecionarLetra(letra, elemento) {
 }
 
 function tentarPosicionar(zonaAlvo) {
-    // Retorna se nada foi selecionado ou se a zona já foi preenchida
     if (!letraSelecionada || zonaAlvo.classList.contains('dropped')) return;
 
     const letraCorreta = zonaAlvo.getAttribute('data-letra');
 
     if (letraSelecionada === letraCorreta) {
-        // Acerto
         tocarSom(somAcerto);
         
         const itemObj = currentItems.find(i => i.letra === letraCorreta);
@@ -114,7 +116,6 @@ function tentarPosicionar(zonaAlvo) {
         verificarFimDeJogo();
 
     } else {
-        // Erro
         tocarSom(somErro);
         
         zonaAlvo.classList.add('erro-animacao');
@@ -136,7 +137,8 @@ function tentarPosicionar(zonaAlvo) {
 function tocarSom(audioElement) {
     if (audioElement && audioElement.readyState >= 2) {
         audioElement.currentTime = 0;
-        audioElement.play().catch(() => console.log("Áudio bloqueado até a primeira interação."));
+        // Interações de pointerdown geralmente desbloqueiam o áudio no mobile
+        audioElement.play().catch(() => console.log("Áudio bloqueado pelo navegador mobile."));
     }
 }
 
@@ -157,6 +159,7 @@ function shuffleArray(array) {
     return array;
 }
 
+// O botão reiniciar pode continuar com 'click' pois é um botão padrão do HTML
 restartBtn.addEventListener('click', initGame);
 
 window.onload = initGame;
