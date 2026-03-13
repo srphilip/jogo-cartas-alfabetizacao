@@ -9,7 +9,7 @@ const gameData = [
     { palavra: "Gato", letra: "G", imagem: "images/gato.jpeg", som: "sounds/g.mp3" },
     { palavra: "Hipopótamo", letra: "H", imagem: "images/hipopotamo.jpg", som: "sounds/h.mp3" },
     { palavra: "Iguana", letra: "I", imagem: "images/iguana.jpg", som: "sounds/i.mp3" },
-    { palavra: "Jacaré", letra: "J", imagem: "images/jacare.jpg", som: "sounds/j.mp3" },
+    { palavra: "Jacaré", letra: "J", imagem: "images/jacare.jpeg", som: "sounds/j.mp3" },
     { palavra: "Kiwi", letra: "K", imagem: "images/kiwi.jpg", som: "sounds/k.mp3" },
     { palavra: "Leão", letra: "L", imagem: "images/leao.jpg", som: "sounds/l.mp3" },
     { palavra: "Macaco", letra: "M", imagem: "images/macaco.jpg", som: "sounds/m.mp3" },
