@@ -1,6 +1,6 @@
 // Banco de dados completo de A a Z na ordem correta
 const gameData = [
-    { palavra: "Abelha", letra: "A", imagem: "images/abelha.png", som: "sounds/a.mp3" },
+    { palavra: "Abelha", letra: "A", imagem: "images/abelha.webp", som: "sounds/a.mp3" },
     { palavra: "Bola", letra: "B", imagem: "images/bola.png", som: "sounds/b.mp3" },
     { palavra: "Casa", letra: "C", imagem: "images/casa.png", som: "sounds/c.mp3" },
     { palavra: "Dado", letra: "D", imagem: "images/dado.png", som: "sounds/d.mp3" },
