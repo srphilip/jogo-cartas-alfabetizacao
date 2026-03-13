@@ -30,14 +30,12 @@ const gameData = [
 
 const alfabetoCompleto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-// Variáveis de controle de fase e pontuação
 let faseAtual = 0;
 let scoreGeral = 0;
 let acertosNaFase = 0;
 let totalItemsFase = 3;
 let currentItems = [];
 
-// Variáveis de controle de movimento
 let isDragging = false;
 let dragElement = null;
 
@@ -49,7 +47,6 @@ const restartBtn = document.getElementById('restart-btn');
 const somAcerto = document.getElementById('som-acerto');
 const somErro = document.getElementById('som-erro');
 
-// Inicializa o jogo do zero
 function initGame() {
     faseAtual = 0;
     scoreGeral = 0;
@@ -57,7 +54,6 @@ function initGame() {
     carregarFase();
 }
 
-// Carrega os 3 itens da fase atual
 function carregarFase() {
     acertosNaFase = 0;
     isDragging = false;
@@ -70,18 +66,15 @@ function carregarFase() {
     feedbackMessage.innerText = "Arraste a letra até o quadro vazio!";
     feedbackMessage.style.color = "#ff9f43";
 
-    // Calcula de onde até onde pegar no array (ex: fase 0 pega index 0, 1 e 2)
     const startIndex = faseAtual * 3;
     currentItems = gameData.slice(startIndex, startIndex + 3);
     totalItemsFase = currentItems.length;
 
-    // Se não tiver mais itens, o jogador zerou o alfabeto!
     if (totalItemsFase === 0) {
         telaFinal();
         return;
     }
 
-    // Renderiza as imagens e os quadros vazios da fase
     currentItems.forEach(item => {
         const itemBox = document.createElement('div');
         itemBox.classList.add('item-box');
@@ -93,7 +86,6 @@ function carregarFase() {
         dropZoneContainer.appendChild(itemBox);
     });
 
-    // Embaralha o alfabeto completo e renderiza as cartas
     let letrasEmbaralhadas = shuffleArray([...alfabetoCompleto]);
     letrasEmbaralhadas.forEach(letra => {
         const letterCard = document.createElement('div');
@@ -104,8 +96,6 @@ function carregarFase() {
         lettersContainer.appendChild(letterCard);
     });
 }
-
-// === LÓGICA DE ARRASTAR E SOLTAR ===
 
 function iniciarArrasto(e) {
     if (e.button !== 0 && e.pointerType === 'mouse') return; 
@@ -141,18 +131,20 @@ function soltar(e) {
     document.removeEventListener('pointerup', soltar);
     document.removeEventListener('pointercancel', soltar);
 
-    dragElement.style.display = 'none';
+    // CORREÇÃO CRÍTICA AQUI: O uso do visibility preserva o espaço da carta, evitando que a tela pule
+    dragElement.style.visibility = 'hidden';
     const elementoAbaixoDoDedo = document.elementFromPoint(e.clientX, e.clientY);
-    dragElement.style.display = 'flex';
+    dragElement.style.visibility = 'visible';
 
     const zonaAlvo = elementoAbaixoDoDedo ? elementoAbaixoDoDedo.closest('.drop-zone') : null;
 
     if (zonaAlvo && !zonaAlvo.classList.contains('dropped')) {
         const letraCorreta = zonaAlvo.getAttribute('data-letra');
-        const letraArrastada = dragElement.innerText;
+        
+        // Limpeza de espaços em branco para garantir a leitura correta
+        const letraArrastada = dragElement.innerText.trim();
 
         if (letraCorreta === letraArrastada) {
-            // ACERTOU
             tocarSom(somAcerto);
             
             const itemObj = currentItems.find(i => i.letra === letraCorreta);
@@ -181,7 +173,6 @@ function soltar(e) {
             verificarFimDeFase();
 
         } else {
-            // ERROU
             tocarSom(somErro);
             zonaAlvo.classList.add('erro-animacao');
             feedbackMessage.innerText = "Ops! Tente novamente!";
@@ -191,7 +182,6 @@ function soltar(e) {
             resetarPosicao(dragElement); 
         }
     } else {
-        // SOLTOU FORA
         resetarPosicao(dragElement);
     }
 
@@ -214,20 +204,16 @@ function tocarSom(audioElement) {
     }
 }
 
-// === CONTROLE DE FLUXO DO JOGO ===
-
 function verificarFimDeFase() {
-    // Se a criança preencheu todos os quadrados desta fase (geralmente 3)
     if (acertosNaFase === totalItemsFase) {
         setTimeout(() => {
             feedbackMessage.innerText = "Parabéns! Vamos para a próxima fase?";
             feedbackMessage.style.color = "#9b59b6";
             
-            // Reconfigura o botão para ser o "Próxima Fase"
             restartBtn.innerText = "Próxima Fase";
             restartBtn.onclick = () => {
-                faseAtual++; // Avança a fase
-                carregarFase(); // Carrega os próximos 3 itens
+                faseAtual++; 
+                carregarFase(); 
             };
             restartBtn.classList.remove('hidden');
         }, 500);
@@ -238,7 +224,6 @@ function telaFinal() {
     feedbackMessage.innerText = "UAU! Você completou todo o Alfabeto!";
     feedbackMessage.style.color = "#f1c40f";
     
-    // Volta o botão para o comportamento de reiniciar do zero
     restartBtn.innerText = "Jogar Tudo de Novo";
     restartBtn.onclick = initGame;
     restartBtn.classList.remove('hidden');
