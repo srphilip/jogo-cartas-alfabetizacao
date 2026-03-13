@@ -86,10 +86,10 @@ h1 {
 
 /* QUADRO VAZIO: Agora retangular para caber a carta */
 .drop-zone {
-    width: 96px;
-    height: 136px;
+    width: 130px;  /* Aumentamos a largura (era 96px) */
+    height: 170px; /* Aumentamos a altura (era 136px) */
     border: 4px dashed #ccc;
-    border-radius: 12px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
